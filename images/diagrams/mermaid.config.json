@@ -1,0 +1,10 @@
+{
+  "er": {
+    "diagramPadding": 20,
+    "layoutDirection": "LR",
+    "minEntityWidth": 100,
+    "minEntityHeight": 75,
+    "entityPadding": 15,
+    "useMaxWidth": false
+  }
+}

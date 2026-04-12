@@ -1,0 +1,133 @@
+erDiagram
+    direction LR
+    CATEGORY |o--o{ EVENT : "SET NULL"
+    ORGANIZATION |o--o{ PERSON : "SET NULL"
+    ORGANIZATION ||--o{ ORGANIZATION_EVENT : "CASCADE"
+    ORGANIZATION_EVENT }o--|| EVENT : "CASCADE"
+    EVENT ||--|{ OPTION : "RESTRICT"
+    EVENT ||--o{ EVENT_TRAINER : "CASCADE"
+    EVENT_TRAINER }o--|| PERSON : "RESTRICT"
+    OPTION ||--o{ RESERVATION : "RESTRICT"
+    PERSON ||--o{ RESERVATION : "RESTRICT"
+    PERSON }o--o| COUNTRY : ""
+    PERSON }o--o| SHIRT_SIZE : ""
+    PERSON }o--o| FACULTY : ""
+
+    CATEGORY {
+        INTEGER id PK
+        VARCHAR name
+        TIMESTAMP created_at
+        TIMESTAMP updated_at
+    }
+    EVENT {
+        INTEGER id PK
+        VARCHAR title
+        TEXT description
+        TEXT image
+        VARCHAR location
+        TIMESTAMP starts_at
+        TIMESTAMP ends_at
+        TIMESTAMP published_at
+        TIMESTAMP archived_at
+        TIMESTAMP cancelled_at
+        TIMESTAMP opens_at
+        TIMESTAMP closes_at
+        TEXT notes
+        TEXT cancellation_reason
+        TIMESTAMP reservations_open_at
+        TIMESTAMP reservations_close_at
+        TIMESTAMP reservations_cancel_at
+        TIMESTAMP deleted_at
+        INTEGER category_id FK
+        TIMESTAMP created_at
+        TIMESTAMP updated_at
+    }
+    OPTION {
+        INTEGER id PK
+        VARCHAR title
+        TEXT description
+        INTEGER total_units
+        INTEGER available_units
+        INTEGER taken_units
+        INTEGER wait_list_units
+        BOOLEAN is_waitlistable
+        BOOLEAN is_auto_confirmable
+        BOOLEAN is_sport_only
+        BOOLEAN is_student_only
+        TIMESTAMP deleted_at
+        INTEGER event_id FK
+        TIMESTAMP created_at
+        TIMESTAMP updated_at
+    }
+    RESERVATION {
+        INTEGER id PK
+        INTEGER status
+        BOOLEAN queued
+        TIMESTAMP attended_at
+        TEXT notes
+        TIMESTAMP deleted_at
+        INTEGER person_id FK
+        INTEGER option_id FK
+        TIMESTAMP created_at
+        TIMESTAMP updated_at
+    }
+    PERSON {
+        INTEGER id PK
+        VARCHAR first_name
+        VARCHAR last_name
+        VARCHAR email
+        VARCHAR phone
+        VARCHAR tax_number
+        VARCHAR country
+        VARCHAR shirt_size
+        VARCHAR faculty
+        INTEGER year_of_study
+        TEXT dirty_socks
+        TEXT image
+        INTEGER organization_id FK
+        TIMESTAMP created_at
+        TIMESTAMP updated_at
+    }
+    ORGANIZATION {
+        INTEGER id PK
+        VARCHAR name
+        TIMESTAMP created_at
+        TIMESTAMP updated_at
+    }
+    ORGANIZATION_EVENT {
+        INTEGER organization_id FK
+        INTEGER event_id FK
+    }
+    EVENT_TRAINER {
+        INTEGER event_id FK
+        INTEGER person_id FK
+    }
+    COUNTRY {
+        INTEGER id PK
+        VARCHAR value
+        VARCHAR label
+    }
+    SHIRT_SIZE {
+        INTEGER id PK
+        VARCHAR value
+        VARCHAR label
+    }
+    FACULTY {
+        INTEGER id PK
+        VARCHAR value
+        VARCHAR label
+    }
+    GENDER {
+        INTEGER id PK
+        VARCHAR value
+        VARCHAR label
+    }
+    FILE {
+        INTEGER id PK
+        VARCHAR name
+        VARCHAR type
+        INTEGER size
+        VARCHAR hash
+        TIMESTAMP created_at
+        TIMESTAMP deleted_at
+    }

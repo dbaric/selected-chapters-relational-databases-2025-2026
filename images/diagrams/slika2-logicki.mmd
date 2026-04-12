@@ -1,0 +1,60 @@
+erDiagram
+    direction LR
+    CATEGORY |o--o{ EVENT : "classifies"
+    ORGANIZATION |o--o{ PERSON : "employs"
+    ORGANIZATION ||--o{ ORGANIZATION_EVENT : ""
+    ORGANIZATION_EVENT }o--|| EVENT : ""
+    EVENT ||--|{ OPTION : "has"
+    EVENT ||--o{ EVENT_TRAINER : ""
+    EVENT_TRAINER }o--|| PERSON : ""
+    OPTION ||--o{ RESERVATION : "receives"
+    PERSON ||--o{ RESERVATION : "makes"
+    PERSON }o--o| COUNTRY : ""
+    PERSON }o--o| SHIRT_SIZE : ""
+    PERSON }o--o| FACULTY : ""
+
+    CATEGORY { string name }
+    EVENT {
+        string title
+        string location "null"
+        datetime starts_at
+        datetime ends_at
+    }
+    OPTION {
+        string title
+        string description "null"
+        int total_units
+        int available_units
+        int taken_units
+        int wait_list_units
+        bool is_waitlistable
+        bool is_auto_confirmable
+    }
+    RESERVATION {
+        int status
+        bool queued
+        datetime attended_at "null"
+        string notes "null"
+    }
+    PERSON {
+        string first_name
+        string last_name
+        string email "null"
+        string phone "null"
+        string tax_number "null"
+        string country "null"
+        string shirt_size "null"
+        string faculty "null"
+        int year_of_study "null"
+    }
+    ORGANIZATION { string name }
+    COUNTRY { string value }
+    SHIRT_SIZE { string value }
+    FACULTY { string value }
+    GENDER { string value }
+    FILE {
+        string name
+        string type
+        int size
+        string hash
+    }

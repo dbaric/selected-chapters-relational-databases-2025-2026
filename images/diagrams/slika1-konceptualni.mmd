@@ -1,0 +1,35 @@
+erDiagram
+    direction LR
+    CATEGORY |o--o{ EVENT : "classifies"
+    ORGANIZATION |o--o{ PERSON : "employs"
+    ORGANIZATION ||--o{ ORGANIZATION_EVENT : "organizes"
+    ORGANIZATION_EVENT }o--|| EVENT : ""
+    EVENT ||--|{ OPTION : "has"
+    EVENT ||--o{ EVENT_TRAINER : "trains"
+    EVENT_TRAINER }o--|| PERSON : ""
+    OPTION ||--o{ RESERVATION : "receives"
+    PERSON ||--o{ RESERVATION : "makes"
+
+    CATEGORY { string name }
+    EVENT {
+        string title
+        string location
+        datetime starts_at
+        datetime ends_at
+    }
+    OPTION {
+        string title
+        int total_units
+        bool is_waitlistable
+    }
+    RESERVATION {
+        int status
+        bool queued
+        datetime attended_at
+    }
+    PERSON {
+        string first_name
+        string last_name
+        string email
+    }
+    ORGANIZATION { string name }
