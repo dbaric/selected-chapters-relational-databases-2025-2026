@@ -159,7 +159,7 @@ Sustav za rezervaciju sportskih aktivnosti za studente Sveučilišta u Splitu u 
 </tr>
 </table>
 
-Domena je po prirodi višestruko pogodna za relacijsku bazu podataka. Svaki sportski događaj organizira jedna ili više udruga (odnos više-na-više), ima jednu ili više opcija sudjelovanja s odvojenim kapacitetima, a studenti mogu napraviti više rezervacija za različite događaje, što znači visoku frekvenciju pisanja i čitanja s nužnim referentnim integritetom. Kapacitetno upravljanje (slobodna mjesta, zauzeta mjesta, čekalna lista) zahtijeva konzistentnost koja se teško garantira na razini aplikacije bez potpore baze podataka u obliku triggera (automatiziranih pravila koja se izvršavaju pri promjeni podataka) i transakcija (skupova operacija koje ili sve prolaze ili se sve poništavaju). Evidencija prisutnosti, praćenje statusa rezervacije i soft-delete (logičko brisanje postavljanjem timestampa umjesto fizičkog uklanjanja retka) za arhivirane događaje dodatni su elementi koji upućuju na strukturirani model pohrane.
+Domena je po prirodi višestruko pogodna za relacijsku bazu podataka. Svaki sportski događaj organizira jedna ili više udruga (odnos više-na-više), ima jednu ili više opcija sudjelovanja s odvojenim kapacitetima, a studenti mogu napraviti više rezervacija za različite događaje, što znači visoku frekvenciju pisanja i čitanja s nužnim referentnim integritetom. Kapacitetno upravljanje (slobodna mjesta, zauzeta mjesta, lista čekanja) zahtijeva konzistentnost koja se teško garantira na razini aplikacije bez potpore baze podataka u obliku triggera (automatiziranih pravila koja se izvršavaju pri promjeni podataka) i transakcija (skupova operacija koje ili sve prolaze ili se sve poništavaju). Evidencija prisutnosti, praćenje statusa rezervacije i soft-delete (logičko brisanje postavljanjem timestampa umjesto fizičkog uklanjanja retka) za arhivirane događaje dodatni su elementi koji upućuju na strukturirani model pohrane.
 
 Korisnici sustava dijele se u tri uloge. Studenti pregledavaju dostupne sportske događaje i upućuju rezervacije za opcije po svom odabiru. Treneri su pridruženi događajima kao vanjski suradnici i nemaju administracijska prava, ali mogu voditi evidenciju prisutnosti. Administratori organizacija kreiraju i upravljaju događajima.
 
@@ -169,7 +169,7 @@ Sustav je definiran sljedećim funkcionalnim zahtjevima:
 
 1. Korisnik mora moći pregledati dostupne sportske događaje filtrirane po kategoriji i datumu.
 2. Sustav mora voditi evidenciju o rezervacijama s praćenjem statusa (PENDING, CONFIRMED ili CANCELLED) i prisutnosti svakog pojedinog sudionika.
-3. Potrebno je upravljati kapacitetima opcija s podrškom za čekalnu listu. Kada su sva redovna mjesta zauzeta, daljnje rezervacije ulaze na čekalnu listu ako je to za opciju postavljeno.
+3. Potrebno je upravljati kapacitetima opcija s podrškom za listu čekanja. Kada su sva redovna mjesta zauzeta, daljnje rezervacije ulaze na listu čekanja ako je to za opciju postavljeno.
 4. Sustav mora bilježiti koje organizacije organiziraju koji događaj. Jedan događaj može biti zajednički projekt više organizacija (M:N veza).
 5. Promjena statusa rezervacije mora konzistentno ažurirati kapacitetna polja opcije na razini baze podataka, neovisno o tome dolazi li izmjena iz aplikacijskog sloja ili direktnim SQL iskazom.
 
@@ -242,8 +242,8 @@ Podređeni entitet koji definira jednu varijantu sudjelovanja na događaju. Isti
 | `total_units`         | INTEGER      | NOT NULL   | ukupan kapacitet; CHECK `>= 0`                                             |
 | `available_units`     | INTEGER      | NOT NULL   | slobodna mjesta; izvedeno, osigurano triggerom                             |
 | `taken_units`         | INTEGER      | NOT NULL   | zauzeta mjesta; izvedeno, osigurano triggerom                              |
-| `wait_list_units`     | INTEGER      | NOT NULL   | na čekalnoj listi; izvedeno, osigurano triggerom                           |
-| `is_waitlistable`     | BOOLEAN      | NOT NULL   | dopušta čekalnu listu (DEFAULT FALSE)                                      |
+| `wait_list_units`     | INTEGER      | NOT NULL   | na listi čekanja; izvedeno, osigurano triggerom                           |
+| `is_waitlistable`     | BOOLEAN      | NOT NULL   | dopušta listu čekanja (DEFAULT FALSE)                                      |
 | `is_auto_confirmable` | BOOLEAN      | NOT NULL   | rezervacija se automatski potvrđuje                                        |
 | `is_sport_only`       | BOOLEAN      | NOT NULL   | vidljivo samo registriranim sportašima; privremeni/eksperimentalni boolean |
 | `is_student_only`     | BOOLEAN      | NOT NULL   | vidljivo samo studentima UNIST-a; privremeni/eksperimentalni boolean       |
@@ -253,7 +253,7 @@ Veze: N:1 s `Event`, 1:N s `Reservation`.
 
 #### 2.2.3 Reservation
 
-Junction entitet s atributima koji bilježi jednu konkretnu rezervaciju osobe za opciju. Za razliku od čistih junction tablica (`OrganizationEvent`, `EventTrainer`), Reservation nosi poslovne atribute: status, evidenciju prisutnosti i napomene. Tablica sadrži polje `deleted_at` (soft delete) koje je trenutno rezervirano i nije u aktivnoj upotrebi. Operativni scenarij fizičkog brisanja otkazanih rezervacija prikazan je u §6.3. Polje `queued` bilježi je li rezervacija smještena na čekalnu listu. Vrijednost postavlja trigger kategorije C pri INSERT-u.
+Junction entitet s atributima koji bilježi jednu konkretnu rezervaciju osobe za opciju. Za razliku od čistih junction tablica (`OrganizationEvent`, `EventTrainer`), Reservation nosi poslovne atribute: status, evidenciju prisutnosti i napomene. Tablica sadrži polje `deleted_at` (soft delete) koje je trenutno rezervirano i nije u aktivnoj upotrebi. Operativni scenarij fizičkog brisanja otkazanih rezervacija prikazan je u §6.3. Polje `queued` bilježi je li rezervacija smještena na listu čekanja. Vrijednost postavlja trigger kategorije C pri INSERT-u.
 
 | Atribut       | Tip       | Obaveznost | Napomena                                               |
 | ------------- | --------- | ---------- | ------------------------------------------------------ |
@@ -261,7 +261,7 @@ Junction entitet s atributima koji bilježi jednu konkretnu rezervaciju osobe za
 | `created_at`  | TIMESTAMP | NOT NULL   |                                                        |
 | `updated_at`  | TIMESTAMP | NOT NULL   | trigger kategorije B                                   |
 | `deleted_at`  | TIMESTAMP | NULL       | soft delete (nije u aktivnoj upotrebi)                 |
-| `queued`      | BOOLEAN   | NOT NULL   | TRUE = smještena na čekalnu listu; postavlja trigger C |
+| `queued`      | BOOLEAN   | NOT NULL   | TRUE = smještena na listu čekanja; postavlja trigger C |
 | `status`      | INTEGER   | NOT NULL   | 0=PENDING, 1=CONFIRMED, 2=CANCELLED; CHECK IN (0,1,2)  |
 | `attended_at` | TIMESTAMP | NULL       | timestamp evidencije dolaska; NULL = nije prisutan     |
 | `notes`       | TEXT      | NULL       | napomene administratora                                |
@@ -604,10 +604,10 @@ BEGIN
     WHERE  id = NEW.option_id
     FOR UPDATE;
 
-    -- Blokiraj INSERT ako nema mjesta ni čekalne liste
+    -- Blokiraj INSERT ako nema mjesta ni liste čekanja
     IF v_available <= 0 AND NOT v_waitlistable THEN
         RAISE EXCEPTION
-            'Opcija % je popunjena i ne podržava čekalnu listu.',
+            'Opcija % je popunjena i ne podržava listu čekanja.',
             NEW.option_id;
     END IF;
 
@@ -619,7 +619,7 @@ BEGIN
         WHERE  id = NEW.option_id;
         NEW.queued := FALSE;
     ELSE
-        -- Nema slobodnih mjesta — čekalna lista
+        -- Nema slobodnih mjesta — lista čekanja
         UPDATE option
         SET    wait_list_units = wait_list_units + 1
         WHERE  id = NEW.option_id;
@@ -637,7 +637,7 @@ FOR EACH ROW EXECUTE FUNCTION enforce_option_capacity();
 
 **C3: AFTER UPDATE na `reservation`, promjena statusa**
 
-Polje `OLD.queued` koristi se za određivanje tipa rezervacije (regularno mjesto ili čekalna lista), što određuje koji se brojač smanjuje pri otkazivanju. `OLD` je varijabla simetrična s `NEW`: sadrži stanje retka kakvo je bilo prije UPDATE-a, dok `NEW` sadrži novo stanje. Dostupna je samo u AFTER triggerima i BEFORE UPDATE triggerima.
+Polje `OLD.queued` koristi se za određivanje tipa rezervacije (regularno mjesto ili lista čekanja), što određuje koji se brojač smanjuje pri otkazivanju. `OLD` je varijabla simetrična s `NEW`: sadrži stanje retka kakvo je bilo prije UPDATE-a, dok `NEW` sadrži novo stanje. Dostupna je samo u AFTER triggerima i BEFORE UPDATE triggerima.
 
 ```sql
 CREATE OR REPLACE FUNCTION sync_option_capacity()
@@ -646,7 +646,7 @@ BEGIN
     -- Otkazivanje (bilo koji status → CANCELLED=2)
     IF NEW.status = 2 AND OLD.status <> 2 THEN
         IF OLD.queued THEN
-            -- Bila je na čekalnoj listi — osloboditi wait_list slot
+            -- Bila je na listi čekanja — osloboditi wait_list slot
             UPDATE option
             SET    wait_list_units = GREATEST(wait_list_units - 1, 0)
             WHERE  id = NEW.option_id;
@@ -715,7 +715,26 @@ INSERT INTO reservation (person_id, option_id) VALUES (10, 8);
 SELECT taken_units, available_units, wait_list_units FROM option WHERE id = 8;
 ```
 
-Kumulativni učinak svih dosadašnjih aktivacija triggera C vidljiv je u trenutnim vrijednostima `taken_units`, `available_units` i `wait_list_units` tablice `option`. Detaljni primjeri s `ASSERT` provjerama dani su u sekciji 6.6 (transakcije T1 i T3).
+**Trigger C3 (`reservation_sync_capacity`): provjera otkazivanja**
+
+```sql
+-- Koristimo rezervaciju upravo kreiranu u C1+C2 testu (person_id=10, option_id=8)
+-- Stanje PRIJE otkazivanja
+SELECT r.id, r.status, r.queued, o.taken_units, o.available_units
+FROM   reservation r
+JOIN   option o ON o.id = r.option_id
+WHERE  r.option_id = 8 AND r.person_id = 10;
+
+-- Otkazivanje — trigger sync_option_capacity se aktivira AFTER UPDATE
+UPDATE reservation
+SET    status = 2
+WHERE  option_id = 8 AND person_id = 10 AND status <> 2;
+
+-- Stanje NAKON — taken-- i available++ (jer queued=FALSE za regularnu rezervaciju)
+SELECT taken_units, available_units, wait_list_units FROM option WHERE id = 8;
+```
+
+Kumulativni učinak svih dosadašnjih aktivacija triggera C vidljiv je u trenutnim vrijednostima `taken_units`, `available_units` i `wait_list_units` tablice `option`. Detaljni primjeri s `ASSERT` provjerama dani su u sekciji 6.5 (transakcije T1 i T3).
 
 ### 5.2 Schema
 
@@ -1012,7 +1031,7 @@ WHERE e.starts_at >= '2025-01-01'
 CREATE INDEX idx_event_starts_at ON event (starts_at);
 ```
 
-B-tree (uravnoteženo stablo, struktura koja drži vrijednosti sortiranima, pa pretraga po rasponu nije linearna) zadani je i najčešći tip indeksa u PostgreSQL-u. Pogodan je za stupce koji se koriste u uspoređivanjima s rasponom (`>=`, `<`, `BETWEEN`). Nakon kreiranja, planer upita može koristiti Index Scan (čita retke kroz indeks redom koji indeks diktira) ili Bitmap Index Scan (skuplja podudaranja iz indeksa u bitmapu, pa ih čita iz tablice u blokovima, što je učinkovitije kada ima više pogodaka) umjesto punog Seq Scan-a.
+B-tree (uravnoteženo stablo, struktura koja drži vrijednosti sortiranima, pa pretraga po rasponu nije linearna) zadani je i najčešći tip indeksa u PostgreSQL-u. Pogodan je za stupce koji se koriste u uspoređivanjima s rasponom (`>=`, `<`, `BETWEEN`). Nakon kreiranja, planer upita može koristiti Index Scan (čita retke kroz indeks redom koji indeks diktira) ili Bitmap Index Scan (skuplja podudaranja iz indeksa u bitmapu, pa ih čita iz tablice u blokovima, što je učinkovitije kada ima više hitova) umjesto punog Seq Scan-a.
 
 `EXPLAIN ANALYZE` je naredba koja prikazuje plan izvođenja upita zajedno s izmjerenim vremenima, korisna za provjeru koristi li upit indeks. Provjera plana izvođenja:
 
@@ -1399,6 +1418,10 @@ WHERE  id = 1
   AND  attended_at IS NULL; -- idempotentna zaštita — ne prepisuje postojeći timestamp
 
 COMMIT;
+
+-- Provjera: attended_at mora biti postavljen
+SELECT id, status, attended_at FROM reservation WHERE id = 1;
+-- Rezultat: attended_at = <timestamp izvršavanja> (nije NULL), ostala polja nepromijenjena
 ```
 
 T2 ne mijenja kapacitetna polja: evidentiranje dolaska ne utječe na `taken_units` ni `available_units`. Jedina promjena je postavljanje timestampa `attended_at` na trenutni trenutak, čime sustav bilježi fizičku prisutnost sudionika.
@@ -1530,46 +1553,7 @@ JOIN između `event`, `option` i `category` ugrađen u view ne ponavlja se u sva
 
 `NULLIF(total_units, 0)` štiti od dijeljenja s nulom za opcije s nultim kapacitetom. `NULLS LAST` stavlja opcije s NULL postotkom (total_units = 0) na dno liste umjesto na vrh.
 
-### 7.4 Zadatak 4: Opcije s listom čekanja i koreliranim EXISTS
-
-**Opis:** Prikazati sve aktivne opcije na kojima postoje sudionici koji čekaju (`wait_list_units > 0`), uz naziv događaja i kategorije, maksimalni i minimalni kapacitet unutar tog događaja te postotak popunjenosti. Uključiti samo opcije kod kojih postoji barem jedna potvrđena rezervacija. Sortirati po broju na čekalnoj listi silazno.
-
-**Konstrukti:** INNER JOIN (option, event, category), EXISTS (koreliran podupit), MAX, MIN, ROUND, NULLIF, ORDER BY DESC.
-
-```sql
-SELECT
-    e.title                                                       AS event_title,
-    COALESCE(c.name, 'Bez kategorije')                            AS category,
-    o.title                                                       AS option_title,
-    o.wait_list_units,
-    (SELECT MAX(o2.total_units)
-     FROM   option o2
-     WHERE  o2.event_id = e.id
-       AND  o2.deleted_at IS NULL)                                AS max_event_capacity,
-    (SELECT MIN(o2.total_units)
-     FROM   option o2
-     WHERE  o2.event_id = e.id
-       AND  o2.deleted_at IS NULL)                                AS min_event_capacity,
-    ROUND(
-        o.taken_units::NUMERIC / NULLIF(o.total_units, 0) * 100, 2
-    )                                                             AS occupancy_percent
-FROM   option o
-INNER JOIN event    e ON e.id  = o.event_id AND e.deleted_at IS NULL
-LEFT  JOIN category c ON c.id = e.category_id
-WHERE  o.wait_list_units > 0
-  AND  o.deleted_at IS NULL
-  AND  EXISTS (
-           SELECT 1
-           FROM   reservation r
-           WHERE  r.option_id = o.id   -- korelacija s vanjskim upitom
-             AND  r.status    = 1      -- status 1 = CONFIRMED
-       )
-ORDER BY o.wait_list_units DESC;
-```
-
-`EXISTS(podupit)` vraća TRUE ako podupit vrati barem jedan redak, a FALSE za prazan skup. Koje vrijednosti podupit vraća nije relevantno. Ovaj podupit je koreliran: referencira `o.id` iz vanjskog upita, što znači da se izvršava zasebno za svaki redak vanjskog upita i može vidjeti vrijednosti iz tog retka. Za svaki redak `option` provjerava se postoji li barem jedna potvrđena rezervacija za tu konkretnu opciju.
-
-### 7.5 Zadatak 5: Profil rezervacija po osobi s CASE WHEN
+### 7.4 Zadatak 4: Profil rezervacija po osobi s CASE WHEN
 
 **Opis:** Za svaku osobu koja je napravila barem jednu rezervaciju prikazati puno ime, organizaciju, ukupan broj rezervacija, broj potvrđenih, broj otkazanih i postotak potvrđenih. Uključiti samo osobe čiji je postotak potvrđenih manji od 80%. Sortirati uzlazno po postotku.
 

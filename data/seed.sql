@@ -660,8 +660,7 @@ INSERT INTO file (name, type, size, hash) VALUES
 --           Zabava(0 — soft-deleted event), Kultura(0 — nema eventa, LEFT JOIN)
 -- Upit 7.2: 1 redak;  Unisport Health, 4 eventi, 15 sudionika, ~47% occ
 -- Upit 7.3: 9 opcija sortiranih po popunjenosti; Option 2 i 3 po 100%
--- Upit 7.4: 2 retka;  Option 2 (wait_list=2), Option 3 (wait_list=1)
--- Upit 7.5: 6 osoba ispod 80% — Ana(40%), Marija(25%), Pero(50%),
+-- Upit 7.4: 6 osoba ispod 80% — Ana(40%), Marija(25%), Pero(50%),
 --           Maja(33%), Tomislav(50%), Sara(25%)
 -- ============================================================
 
